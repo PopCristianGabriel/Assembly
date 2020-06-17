@@ -1,0 +1,129 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                                            
+    12                                  ;A string of doublewords is given. Order in increasing order the string of the high words (most significant) from these doublewords. The low words (least significant) remain unchanged. 
+    13                                  ;Example:
+    14                                  ;being given 
+    15                                  ;sir DD 12AB5678h, 1256ABCDh, 12344344h 
+    16                                  ;the result will be 
+    17                                  ;       12345678h, 1256ABCDh, 12AB4344h.
+    18                                                            
+    19                                  ; our data is declared here (the variables needed by our program)
+    20                                  
+    21                                  
+    22                                  segment data use32 class=data
+    23                                      ; ...
+    24                                      ;       dx   bx   high low
+    25 00000000 7856AB12CDAB561244-         sir dd 12AB5678h, 1256ABCDh, 12344344h
+    25 00000009 433412             
+    26                                      lungimeSir equ $-sir
+    27 0000000C 00000000<rept>              rez times lungimeSir dd 0
+    28 0000003C 00000000                    doubleA dd 0
+    29                                      
+    30 00000040 04                          doubleWordConstant db 4
+    31 00000041 00000000                    index dd 0
+    32 00000045 <res 00000001>              ok resb 1
+    33                                      
+    34 00000046 04000000                    patru dd 4
+    35                                      
+    36 0000004A <res 00000002>              highWord resw 1
+    37 0000004C <res 00000002>              lowWord resw 1
+    38                                  ; our code starts here
+    39                                  segment code use32 class=code
+    40                                      start:
+    41                                          ; ...
+    42                                          
+    43 00000000 B90C000000                      mov ecx,lungimeSir
+    44 00000005 FC                              cld
+    45                                         inceput:
+    46                                         
+    47 00000006 C605[45000000]01               mov [ok],byte 1
+    48 0000000D BE[00000000]                   mov esi,sir
+    49                                         
+    50                                         ;1234 5678h, 1256 ABCDh
+    51 00000012 8B0D[41000000]                 mov ecx,[index]
+    52                                         
+    53 00000018 E308                           jecxz jumpOver
+    54                                         repeat:
+    55                                  
+    56 0000001A 81C6[46000000]                 add esi,patru
+    57                                         
+    58 00000020 E2F8                           loop repeat
+    59                                         
+    60                                         jumpOver:
+    61                                         
+    62                                         
+    63 00000022 AD                             lodsd
+    64 00000023 A3[3C000000]                   mov [doubleA],eax
+    65 00000028 668B1D[3C000000]               mov bx,[doubleA];in bx am primul lowWord ->5678
+    66 0000002F 668B15[3E000000]               mov dx,[doubleA+2]; in dx am primul highword->1234
+    67 00000036 66891D[4C000000]               mov [lowWord],bx ; in lowWord am primul lowWord
+    68 0000003D 668915[4A000000]               mov [highWord],dx ; in highWord am primul highWord
+    69                                        
+    70                                         
+    71 00000044 AD                             lodsd
+    72 00000045 A3[3C000000]                   mov [doubleA],eax ; in eax am al doilea double word
+    73 0000004A 668B1D[3C000000]               mov bx,[doubleA]  ; in bx am al doilea low Word->ABCD
+    74 00000051 668B15[3E000000]               mov dx,[doubleA+2]  ; in dx am al doilea High Word->1256
+    75                                         
+    76                                         
+    77 00000058 663915[4A000000]               cmp  [highWord],dx
+    78 0000005F 7702                           ja schimba
+    79                                         
+    80                                         ;                    high  low   dx   bx
+    81                                         ;sir dd 12AB 5678h, 1256 ABCDh, 1234 4344h
+    82                                         
+    83 00000061 EB2E                           jmp sari_peste_schimbare
+    84                                         
+    85                                         schimba:
+    86 00000063 66FF35[4A000000]               push word[highWord]
+    87 0000006A 6653                           push bx
+    88 0000006C 5A                             pop edx ; in edx am numarul mai mare
+    89 0000006D 6652                           push dx
+    90 0000006F 66FF35[4C000000]               push word [lowWord]
+    91 00000076 5B                             pop ebx ; in ebx am numarul mai  mic
+    92 00000077 BE[41000000]                   mov esi, index
+    93 0000007C 891CB5[00000000]               mov [sir+esi*4],ebx
+    94 00000083 8914B5[04000000]               mov [sir+(esi+1)*4],edx
+    95 0000008A C605[45000000]00               mov [ok],byte 0
+    96                                         
+    97                                         sari_peste_schimbare:
+    98                                         
+    99 00000091 B904000000                     mov ecx,dword 4
+   100                                         repeat2:
+   101 00000096 FF05[41000000]                 inc dword [index]
+   102 0000009C E2F8                           loop repeat2
+   103                                         
+   104 0000009E B30C                           mov bl,lungimeSir
+   105 000000A0 381D[41000000]                 cmp [index],bl  ; daca indexul a ajuns la final
+   106 000000A6 7405                           je verificaSir   ; verifica daca sirul este ordonat crescator in verificaSir
+   107 000000A8 E959FFFFFF                     jmp inceput
+   108                                         
+   109                                         
+   110                                         
+   111                                         
+   112                                         verificaSir:
+   113 000000AD 803D[45000000]01               cmp [ok],byte 1 ; daca sirul e ordonat crescator
+   114 000000B4 740C                           je termina      ;termina
+   115 000000B6 C605[41000000]00               mov [index],byte 0 ; daca nu, incepem de la inceput cu indexul 0
+   116 000000BD E944FFFFFF                     jmp inceput
+   117                                         
+   118                                         
+   119                                         termina:
+   120                                         
+   121                                         sari_peste:
+   122                                         
+   123                                          
+   124                                          ; exit(0)
+   125                                          
+   126                                          
+   127 000000C2 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+   128 000000C4 FF15[00000000]                  call    [exit]       ; call exit to terminate the program

@@ -1,0 +1,52 @@
+     1                                  ; the program computes the factorial of a number and writes to the console the result
+     2                                  ; the factorial function is defined in the code segment and received on the stack as the parameter a number
+     3                                  bits 32
+     4                                  global start
+     5                                  
+     6                                  extern printf, exit
+     7                                  import printf msvcrt.dll
+     8                                  import exit msvcrt.dll
+     9                                  
+    10                                  segment data use32 class=data
+    11 00000000 666163746F7269616C-         format_string db "factorial=%d", 10, 13, 0
+    11 00000009 3D25640A0D00       
+    12                                      
+    13                                  segment code use32 class=code
+    14                                  ; the factorial function
+    15                                  factorial: 
+    16 00000000 B801000000                  mov eax, 1
+    17 00000005 8B4C2404                    mov ecx, [esp + 4] 
+    18                                      ; mov ecx, [esp + 4] pop from the stack the fucntion parameters
+    19                                      ; ATENTION!!! at the top of the stack it is the retun address
+    20                                      ; the function's parameter is right after the return address
+    21                                      ; see the following draw
+    22                                      ;
+    23                                      ; stack
+    24                                      ;
+    25                                      ;|--------------|
+    26                                      ;|return address|  <- [esp]
+    27                                      ;|--------------|
+    28                                      ;|  00000006h   |  <- the function's parameter, [esp+4]
+    29                                      ;|--------------|
+    30                                      ; ....
+    31                                                  
+    32                                      
+    33                                      .repeat: 
+    34 00000009 F7E1                            mul ecx
+    35 0000000B E2FC                        loop .repeat ; atention, the case ecx = 0 is not treated!
+    36                                  
+    37 0000000D C3                          ret
+    38                                         
+    39                                  ; the "main" program       
+    40                                  start:
+    41 0000000E 6A00                        push dword 0        ; save on the stack the number (the function's parameter)
+    42 00000010 E8EBFFFFFF                  call factorial      ; call the function
+    43                                  
+    44                                         ; write the result
+    45 00000015 50                          push eax
+    46 00000016 68[00000000]                push format_string
+    47 0000001B FF15[00000000]              call [printf]
+    48 00000021 83C408                      add esp, 4*2
+    49                                  
+    50 00000024 6A00                        push 0
+    51 00000026 FF15[00000000]              call [exit]

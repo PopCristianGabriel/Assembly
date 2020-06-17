@@ -1,0 +1,45 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                                            
+    12                                                            
+    13                                  ;Se da un sir de octeti S de lungime l. Sa se construiasca sirul D de lungime l-1 astfel incat elementele din D sa reprezinte produsul dintre fiecare 2 elemente consecutive S(i) si S(i+1) din S. 
+    14                                  ;Exemplu:
+    15                                  ;S: 1, 2, 3, 4
+    16                                  ;D: 2, 6, 12
+    17                                                            
+    18                                  ; our data is declared here (the variables needed by our program)
+    19                                  segment data use32 class=data
+    20                                      ; ...
+    21 00000000 01020304                    s db 01b , 10b , 11b , 100b
+    22                                      lungimeS equ $ - s
+    23                                      lungimeD equ lungimeS-1
+    24 00000004 0000<rept>                  d times lungimeD dw 0 
+    25                                  ; our code starts here
+    26                                  segment code use32 class=code
+    27                                      start:
+    28                                          ; ...
+    29 00000000 B903000000                  mov ecx,lungimeS-1
+    30 00000005 BE[00000000]                mov esi,s
+    31 0000000A BF[04000000]                mov edi,d
+    32 0000000F FC                          cld
+    33 00000010 AC                          lodsb
+    34 00000011 88C3                        mov bl,al
+    35                                      repeta:
+    36 00000013 AC                          lodsb
+    37 00000014 88C2                        mov dl,al
+    38 00000016 F6E3                        mul bl
+    39 00000018 66AB                        stosw
+    40 0000001A 88D3                        mov bl,dl
+    41 0000001C E2F5                        loop repeta
+    42                                      
+    43                                          ; exit(0)
+    44 0000001E 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    45 00000020 FF15[00000000]                  call    [exit]       ; call exit to terminate the program
