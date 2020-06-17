@@ -1,0 +1,52 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  segment data use32 class=data
+    13                                      ; ...
+    14                                  
+    15                                  ; our code starts here
+    16                                  segment code use32 class=code
+    17                                      start:
+    18                                          ; ...
+    19                                          
+    20                                      
+    21 00000000 31C9                            xor ecx,ecx
+    22 00000002 B809000000                      mov eax,9
+    23 00000007 66BA0000                        mov dx,0
+    24 0000000B 66BB0900                        mov bx,9
+    25 0000000F 66B90200                        mov cx,2
+    26                                          inceput:
+    27 00000013 66F7F1                          div cx
+    28 00000016 6683FA00                        cmp dx,0
+    29 0000001A 7410                            je finalNuEPrim
+    30 0000001C 6641                            inc cx
+    31 0000001E 6639C8                          cmp ax,cx
+    32 00000021 7210                            jb finalEPrim
+    33 00000023 6689D8                          mov ax,bx
+    34 00000026 66BA0000                        mov dx,0
+    35 0000002A EBE7                            jmp inceput
+    36                                          
+    37                                          
+    38                                          finalNuEPrim:
+    39 0000002C B800000000                      mov eax,0
+    40 00000031 EB07                            jmp final
+    41                                          
+    42                                          finalEPrim
+    42          ******************       warning: label alone on a line without a colon might be in error [-w+orphan-labels]
+    43 00000033 B801000000                      mov eax,1
+    44 00000038 EB00                            jmp final
+    45                                          
+    46                                          final:
+    47                                          
+    48                                          
+    49                                          ; exit(0)
+    50 0000003A 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+    51 0000003C FF15[00000000]                  call    [exit]       ; call exit to terminate the program

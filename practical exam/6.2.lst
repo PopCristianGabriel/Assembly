@@ -1,0 +1,100 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  segment data use32 class=data
+    13                                      ; ...
+    14                                     ; An array of words is given. Write an asm program in order to obtain an array of doublewords, where each doubleword will contain each nibble unpacked on a byte (each nibble will be preceded by a 0 digit), arrang
+    15                                  ;Example:
+    16                                  ;for the initial array: 
+    17                                  ;1432h, 8675h, 0ADBCh, ...
+    18                                  ;The following should be obtained: 
+    19                                  ;01020304h, 05060708h, 0A0B0C0Dh, ...
+    20 00000000 32147586BCAD                s dw 1432h, 8675h, 0ADBCh
+    21                                      len equ ($-s) / 2
+    22 00000006 00000000<rept>              rez times len dd 0
+    23 00000012 <res 00000001>              lowByte resb 1
+    24 00000013 <res 00000001>              highByte resb 1
+    25 00000014 <res 00000001>              nr resb 1
+    26 00000015 <res 00000001>              byte1 resb 1
+    27 00000016 01000000                    var dd 1
+    28                                  ; our code starts here
+    29                                  segment code use32 class=code
+    30                                      despica:
+    31 00000000 C605[14000000]00            mov [nr],  byte 0
+    32 00000007 8A5C2404                    mov bl,[esp+4]
+    33 0000000B 8A7C2405                    mov bh, [esp+5]
+    34                                      
+    35                                      
+    36 0000000F 881D[15000000]              mov [byte1],bl
+    37                                      inceput:
+    38                                      
+    39 00000015 8025[15000000]0F            and [byte1],byte 00001111b
+    40 0000001C 8A15[15000000]              mov dl,[byte1]
+    41 00000022 8815[12000000]              mov [lowByte],dl
+    42 00000028 881D[15000000]              mov [byte1],bl
+    43 0000002E 8025[15000000]F0            and [byte1],byte 11110000b
+    44 00000035 8A15[15000000]              mov dl,[byte1]
+    45 0000003B 8815[13000000]              mov [highByte],dl
+    46                                   
+    47                                   
+    48 00000041 B104                        mov cl,4
+    49 00000043 D22D[13000000]              shr byte [highByte],byte cl
+    50 00000049 8A1D[12000000]              mov bl,[lowByte]
+    51 0000004F 8A3D[13000000]              mov bh,[highByte]
+    52 00000055 38FB                        cmp  bl, bh
+    53 00000057 7702                        ja schimba
+    54 00000059 EB18                        jmp final
+    55                                      
+    56                                      
+    57                                      
+    58                                      schimba:
+    59 0000005B 8A15[12000000]              mov dl,[lowByte]
+    60 00000061 8A35[13000000]              mov dh,[highByte]
+    61 00000067 8835[12000000]              mov [lowByte],dh
+    62 0000006D 8815[13000000]              mov [highByte],dl
+    63                                      
+    64                                      
+    65                                      final:
+    66 00000073 8A1D[12000000]              mov bl, [lowByte]
+    67 00000079 B700                        mov bh,0
+    68 0000007B 8A15[13000000]              mov dl,[highByte]
+    69 00000081 B600                        mov dh,0
+    70 00000083 6653                        push word bx
+    71 00000085 6652                        push word dx
+    72 00000087 FE05[14000000]              inc byte [nr]
+    73 0000008D 880D[15000000]              mov [byte1],cl
+    74 00000093 803D[14000000]01            cmp byte [nr],1
+    75 0000009A 0F8475FFFFFF                je inceput
+    76 000000A0 5B                          pop ebx
+    77 000000A1 59                          pop ecx
+    78 000000A2 C3                          ret
+    79                                      
+    80                                      
+    81                                      
+    82                                      
+    83                                  
+    84                                  
+    85                                  
+    86                                      start:
+    87                                          ; ...
+    88 000000A3 BE[00000000]                    mov esi ,s
+    89 000000A8 BF[06000000]                    mov edi, rez
+    90 000000AD B800000000                      mov eax,0
+    91 000000B2 66AD                            lodsw
+    92 000000B4 50                              push eax
+    93 000000B5 FF15[00000000]                  call [despica]
+    94                                          
+    95                                          
+    96                                          
+    97                                      
+    98                                          ; exit(0)
+    99 000000BB 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+   100 000000BD FF15[00000000]                  call    [exit]       ; call exit to terminate the program

@@ -1,0 +1,156 @@
+     1                                  bits 32 ; assembling for the 32 bits architecture
+     2                                  
+     3                                  ; declare the EntryPoint (a label defining the very first instruction of the program)
+     4                                  global start        
+     5                                  
+     6                                  ; declare external functions needed by our program
+     7                                  extern exit               ; tell nasm that exit exists even if we won't be defining it
+     8                                  import exit msvcrt.dll    ; exit is a function that ends the calling process. It is defined in msvcrt.dll
+     9                                                            ; msvcrt.dll contains exit, printf and all the other important C-runtime specific functions
+    10                                  
+    11                                  ; our data is declared here (the variables needed by our program)
+    12                                  segment data use32 class=data
+    13                                      ; ...
+    14                                     ; An array of words is given. Write an asm program in order to obtain an array of doublewords, where each doubleword will contain each nibble unpacked on a byte (each nibble will be preceded by a 0 digit), arrang
+    15                                  ;Example:
+    16                                  ;for the initial array: 
+    17                                  ;1432h, 8675h, 0ADBCh, ...
+    18                                  ;The following should be obtained: 
+    19                                  ;01020304h, 05060708h, 0A0B0C0Dh, ...
+    20 00000000 32147586BCAD                s dw 1432h, 8675h, 0ADBCh
+    21                                      len equ ($-s) / 2
+    22 00000006 00000000<rept>              rez times len dd 0
+    23 00000012 <res 00000001>              lowByte resb 1
+    24 00000013 <res 00000001>              highByte resb 1
+    25 00000014 <res 00000001>              nr resb 1
+    26 00000015 <res 00000001>              byte1 resb 1
+    27 00000016 01                          var1 db 1
+    28 00000017 01                          var2 db 1
+    29 00000018 00                          index db 0
+    30 00000019 00                          ok db 0
+    31 0000001A 00<rept>                    sirBiti times 4 db 0
+    32                                  ; our code starts here
+    33                                  segment code use32 class=code
+    34                                      despica:
+    35 00000000 C605[14000000]00            mov [nr],  byte 0
+    36 00000007 8A5C2404                    mov bl,[esp+4]
+    37 0000000B 8A7C2405                    mov bh, [esp+5]
+    38 0000000F 881D[16000000]              mov [var1],bl
+    39 00000015 883D[17000000]              mov [var2],bh
+    40                                      
+    41                                      
+    42                                      
+    43 0000001B 881D[15000000]              mov [byte1],bl
+    44                                      inceput:
+    45                                      
+    46 00000021 8025[15000000]0F            and [byte1],byte 00001111b
+    47 00000028 8A15[15000000]              mov dl,[byte1]
+    48 0000002E 8815[12000000]              mov [lowByte],dl
+    49 00000034 881D[15000000]              mov [byte1],bl
+    50 0000003A 8025[15000000]F0            and [byte1],byte 11110000b
+    51 00000041 8A15[15000000]              mov dl,[byte1]
+    52 00000047 8815[13000000]              mov [highByte],dl
+    53                                   
+    54                                   
+    55 0000004D B104                        mov cl,4
+    56 0000004F D22D[13000000]              shr byte [highByte],byte cl
+    57 00000055 8A1D[12000000]              mov bl,[lowByte]
+    58 0000005B 8A3D[13000000]              mov bh,[highByte]
+    59 00000061 38FB                        cmp  bl, bh
+    60 00000063 7702                        ja schimba
+    61 00000065 EB18                        jmp final
+    62                                      
+    63                                      
+    64                                      
+    65                                      schimba:
+    66 00000067 8A15[12000000]              mov dl,[lowByte]
+    67 0000006D 8A35[13000000]              mov dh,[highByte]
+    68 00000073 8835[12000000]              mov [lowByte],dh
+    69 00000079 8815[13000000]              mov [highByte],dl
+    70                                      
+    71                                      
+    72                                      final:
+    73 0000007F 8A1D[12000000]              mov bl, [lowByte]
+    74 00000085 B700                        mov bh,0
+    75 00000087 8A15[13000000]              mov dl,[highByte]
+    76 0000008D B600                        mov dh,0
+    77 0000008F 6653                        push word bx
+    78 00000091 6652                        push word dx
+    79 00000093 FE05[14000000]              inc byte [nr]
+    80 00000099 8A1D[17000000]              mov bl,[var2]
+    81 0000009F 881D[15000000]              mov [byte1],bl
+    82 000000A5 803D[14000000]01            cmp byte [nr],1
+    83 000000AC 0F846FFFFFFF                je inceput
+    84 000000B2 5B                          pop ebx
+    85 000000B3 59                          pop ecx
+    86 000000B4 C3                          ret
+    87                                      
+    88                                      
+    89                                      
+    90                                   rearanjare:
+    91 000000B5 8A642404                    mov ah,[esp+4]
+    92 000000B9 8A442406                    mov al,[esp+6]
+    93 000000BD 8A7C2408                    mov bh,[esp+8]
+    94 000000C1 8A5C240A                    mov bl,[esp+10]
+    95 000000C5 BF[1A000000]                mov edi, sirBiti
+    96 000000CA FC                          cld
+    97 000000CB AA                          stosb
+    98 000000CC 88E0                        mov al,ah
+    99 000000CE AA                          stosb
+   100 000000CF 88F8                        mov al,bh
+   101 000000D1 AA                          stosb
+   102 000000D2 88D8                        mov al,bl
+   103 000000D4 AA                          stosb
+   104 000000D5 C605[14000000]03            mov [nr],byte 3
+   105 000000DC BE[1A000000]                mov esi,sirBiti
+   106 000000E1 BB00000000                  mov ebx,0
+   107                                      ordonare:
+   108 000000E6 C605[19000000]01            mov [ok],byte 1
+   109                                      incepe:
+   110 000000ED 8A141E                      mov dl,[esi + ebx]
+   111 000000F0 8A741E01                    mov dh,[esi + ebx + 1]
+   112 000000F4 38F2                        cmp dl,dh
+   113 000000F6 7702                        ja schimbare
+   114                                      
+   115 000000F8 EB0E                        jmp incrementare
+   116                                      
+   117                                      schimbare:
+   118 000000FA 88341E                      mov [esi+ebx],dh
+   119 000000FD 88541E01                    mov [esi+ebx+1],dl
+   120 00000101 C605[19000000]00            mov [ok],byte 0
+   121                                      
+   122                                      
+   123                                      incrementare:
+   124 00000108 43                          inc dword ebx
+   125 00000109 83FB03                      cmp ebx,dword 3
+   126 0000010C 7402                        je reset
+   127 0000010E EB09                        jmp Final
+   128                                      
+   129                                      
+   130                                      reset:
+   131 00000110 BB00000000                  mov ebx,dword 0
+   132 00000115 7402                        je Final
+   133 00000117 EBD4                        jmp incepe
+   134                                      
+   135                                      Final:
+   136 00000119 803D[19000000]00            cmp [ok], byte 0
+   137 00000120 74C4                        je ordonare
+   138 00000122 C3                          ret
+   139                                  
+   140                                      start:
+   141                                          ; ...
+   142 00000123 BE[00000000]                    mov esi ,s
+   143 00000128 BF[06000000]                    mov edi, rez
+   144 0000012D B800000000                      mov eax,0
+   145 00000132 66AD                            lodsw
+   146 00000134 50                              push eax
+   147 00000135 E8C6FEFFFF                      call despica
+   148 0000013A 53                              push ebx
+   149 0000013B 51                              push ecx
+   150 0000013C E874FFFFFF                      call rearanjare
+   151                                          
+   152                                          
+   153                                      
+   154                                          ; exit(0)
+   155 00000141 6A00                            push    dword 0      ; push the parameter for exit onto the stack
+   156 00000143 FF15[00000000]                  call    [exit]       ; call exit to terminate the program
